@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type Data struct {
+type Block struct {
 	Bits                  string    `db:"bits"`
 	BlockSize             int       `db:"block_size"`
 	BlockTime             int       `db:"block_time"`
@@ -37,7 +37,7 @@ func main() {
 		panic(err)
 		return
 	}
-	testData := []Data{}
+	testData := []Block{}
 
 	err = dbConn.Select(&testData, "SELECT * FROM block ORDER BY height DESC LIMIT 1")
 	//rows, err := dbConn.Query("SELECT claim_id FROM claim WHERE transaction_hash_update =? AND vout_update=?")
