@@ -51,10 +51,7 @@ func (c chainqueryConn) Query(sqlQuery string, args []driver.Value) (*Chainquery
 	params := url.Values{}
 	params.Add("query", sqlQuery)
 	queryUrl.RawQuery = params.Encode()
-	//requestQuery := c.server + "/api/sql?sqlQuery=" + sqlQuery
-	//if len(args) > 0 {
-	//	requestQuery += "&values=" + strings.Join(args, ",")1
-	//}
+
 	req, err := http.NewRequest("GET", queryUrl.String(), nil)
 	if err != nil {
 		return nil, err
@@ -79,13 +76,6 @@ func (c chainqueryConn) Query(sqlQuery string, args []driver.Value) (*Chainquery
 }
 
 func (c *chainqueryConn) Prepare(query string) (driver.Stmt, error) {
-	//stmt, err := sqlparser.Parse(query)
-	//print(err)
-	//print(stmt)
-	//buf := NewTrackedBuffer(nil)
-	//
-	//stmt.Format(buf)
-	//print(buf)
 	columns, err := c.extractSelectColumns(query)
 	if err != nil {
 		return nil, err
@@ -120,7 +110,6 @@ func (c *chainqueryConn) extractSelectColumns(query string) ([]string, error) {
 }
 
 func (c *chainqueryConn) Close() error {
-	//panic("implement me")
 	return nil
 }
 
@@ -167,26 +156,22 @@ func (c *chainqueryStmt) Query(args []driver.Value) (driver.Rows, error) {
 }
 
 type chainqueryRows struct {
-	//done bool
 	columns []string
-	//columnsMap map[int]string
-	data  []map[string]interface{}
-	index int
+	data    []map[string]interface{}
+	index   int
 }
 
 func (c *chainqueryRows) Columns() []string {
-	return c.columns // []string{"test", "test2"}
+	return c.columns
 }
 
 func (c *chainqueryRows) Close() error {
-	//panic("implement me")
 	return nil
 }
 
 func (c *chainqueryRows) Next(dest []driver.Value) error {
 	if c.index < len(c.data) {
 		row := c.data[c.index]
-		//c.done = true
 		for i := range dest {
 			value, err := c.typeWorkaround(c.columns[i], row[c.columns[i]])
 			if err != nil {
