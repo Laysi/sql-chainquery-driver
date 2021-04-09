@@ -1,6 +1,7 @@
 # sql-chainquery-driver
 
 ```go
+package main
 import (
 	"fmt"
 	_ "github.com/Laysi/sql-chainquery-driver"
