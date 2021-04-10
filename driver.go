@@ -248,7 +248,13 @@ func (c *chainqueryRows) typeWorkaround(name, v interface{}) (interface{}, error
 			return value, nil
 		}
 	case "is_cert_valid", "is_nsfw":
-		return cast.ToBoolE(v)
+		switch value := v.(type) {
+		case float64:
+			return cast.ToBoolE(int(value))
+		default:
+			return cast.ToBoolE(v)
+		}
+
 	default:
 		return v, nil
 	}
