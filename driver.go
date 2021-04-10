@@ -7,11 +7,13 @@ import (
 	"errors"
 	"github.com/go-sql-driver/mysql"
 	"github.com/huandu/go-sqlbuilder"
+	"github.com/spf13/cast"
 	"github.com/xwb1989/sqlparser"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -53,17 +55,17 @@ func (c *chainqueryConn) waitFrequencyLimit() {
 	c.lastCallTime = time.Now()
 
 }
-func (c *chainqueryConn) Query(sqlQuery string, args []driver.Value) (*ChainqueryResult, error) {
+func (c *chainqueryConn) Query(sqlQuery string) (*ChainqueryResult, error) {
 	c.waitFrequencyLimit()
 
-	iArgs := []interface{}{}
-	for _, arg := range args {
-		iArgs = append(iArgs, arg)
-	}
-	sqlQuery, err := sqlbuilder.MySQL.Interpolate(sqlQuery, iArgs)
-	if err != nil {
-		return nil, err
-	}
+	//iArgs := []interface{}{}
+	//for _, arg := range args {
+	//	iArgs = append(iArgs, arg)
+	//}
+	//sqlQuery, err := sqlbuilder.MySQL.Interpolate(sqlQuery, iArgs)
+	//if err != nil {
+	//	return nil, err
+	//}
 	queryUrl, err := url.Parse(c.server + "/api/sql")
 	if err != nil {
 		return nil, err
@@ -97,6 +99,9 @@ func (c *chainqueryConn) Query(sqlQuery string, args []driver.Value) (*Chainquer
 
 func (c *chainqueryConn) Prepare(query string) (driver.Stmt, error) {
 	columns, err := c.extractSelectColumns(query)
+	for i, column := range columns {
+		columns[i] = strings.ToLower(column)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +161,15 @@ func (c *chainqueryStmt) Exec(args []driver.Value) (driver.Result, error) {
 }
 
 func (c *chainqueryStmt) Query(args []driver.Value) (driver.Rows, error) {
-	result, err := c.conn.Query(c.query, args)
+	iArgs := []interface{}{}
+	for _, arg := range args {
+		iArgs = append(iArgs, arg)
+	}
+	sqlQuery, err := sqlbuilder.MySQL.Interpolate(c.query, iArgs)
+	if err != nil {
+		return nil, err
+	}
+	result, err := c.conn.Query(sqlQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -169,16 +182,22 @@ func (c *chainqueryStmt) Query(args []driver.Value) (driver.Rows, error) {
 		}
 	}
 	return &chainqueryRows{
-		columns: columns,
-		index:   0,
-		data:    result.Data,
+		columns:  columns,
+		index:    0,
+		data:     result.Data,
+		rawQuery: sqlQuery,
+		query:    c.query,
+		//args:args,
 	}, nil
 }
 
 type chainqueryRows struct {
-	columns []string
-	data    []map[string]interface{}
-	index   int
+	columns  []string
+	data     []map[string]interface{}
+	index    int
+	stmt     *chainqueryStmt
+	rawQuery string
+	query    string
 }
 
 func (c *chainqueryRows) Columns() []string {
@@ -216,13 +235,20 @@ func (c *chainqueryRows) typeWorkaround(name, v interface{}) (interface{}, error
 		value := v.(float64)
 		return int(value), nil
 	case "created_at", "modified_at", "transaction_time", "release_time":
-		value := v.(string)
-		time, err := time.Parse(time.RFC3339, value)
-		if err != nil {
-			return nil, err
+		switch value := v.(type) {
+		case string:
+			time, err := time.Parse(time.RFC3339, value)
+			if err != nil {
+				return nil, err
+			}
+			return time, nil
+		case float64:
+			return int(value), nil
+		default:
+			return value, nil
 		}
-		return time, nil
-
+	case "is_cert_valid", "is_nsfw":
+		return cast.ToBoolE(v)
 	default:
 		return v, nil
 	}
