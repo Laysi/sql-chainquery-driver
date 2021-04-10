@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/xwb1989/sqlparser"
 	"io"
@@ -35,7 +36,12 @@ type ChainqueryResult struct {
 	Data    []map[string]interface{}
 }
 
+var lastCallTime time.Time = time.Now()
+
 func (c chainqueryConn) Query(sqlQuery string, args []driver.Value) (*ChainqueryResult, error) {
+	now := time.Now()
+	fmt.Printf("chainquery driver called again after %v\n", time.Since(lastCallTime))
+	lastCallTime = now
 	iArgs := []interface{}{}
 	for _, arg := range args {
 		iArgs = append(iArgs, arg)
@@ -128,7 +134,7 @@ func (c *chainqueryStmt) Close() error {
 }
 
 func (c *chainqueryStmt) NumInput() int {
-	return 0 //figure out what the heck is this
+	return -1 //figure out what the heck is this
 }
 
 func (c *chainqueryStmt) Exec(args []driver.Value) (driver.Result, error) {
@@ -189,10 +195,10 @@ func (c *chainqueryRows) Next(dest []driver.Value) error {
 }
 func (c *chainqueryRows) typeWorkaround(name, v interface{}) (interface{}, error) {
 	switch name {
-	case "block_size", "nonce", "version", "version_hex", "block_time":
+	case "block_size", "nonce", "version", "version_hex", "block_time", "id", "effective_amount", "certificate_amount", "frame_width", "frame_height", "duration", "channel_claim_count", "claim_count":
 		value := v.(float64)
 		return int(value), nil
-	case "created_at", "modified_at":
+	case "created_at", "modified_at", "transaction_time", "release_time":
 		value := v.(string)
 		time, err := time.Parse(time.RFC3339, value)
 		if err != nil {
