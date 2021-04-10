@@ -5,7 +5,6 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/go-sql-driver/mysql"
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/xwb1989/sqlparser"
@@ -47,7 +46,7 @@ type ChainqueryResult struct {
 //var lastCallTime time.Time = time.Now()
 func (c *chainqueryConn) waitFrequencyLimit() {
 	since := time.Since(c.lastCallTime)
-	fmt.Printf("chainquery driver called again after %v\n", since)
+	//fmt.Printf("chainquery driver called again after %v\n", since)
 	if since < time.Millisecond*200 {
 		time.Sleep(time.Millisecond*200 - since)
 	}
