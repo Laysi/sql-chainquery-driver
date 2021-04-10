@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/go-sql-driver/mysql"
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/xwb1989/sqlparser"
 	"io"
@@ -19,8 +20,13 @@ type ChainqueryDriver struct {
 }
 
 func (d ChainqueryDriver) Open(dsn string) (driver.Conn, error) {
+	cfg, err := mysql.ParseDSN(dsn)
+	if err != nil {
+		return nil, err
+	}
+
 	return &chainqueryConn{
-		server: dsn,
+		server: cfg.Addr,
 		client: &http.Client{},
 	}, nil
 }
