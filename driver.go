@@ -208,6 +208,9 @@ func (c *chainqueryRows) Next(dest []driver.Value) error {
 	return io.EOF
 }
 func (c *chainqueryRows) typeWorkaround(name, v interface{}) (interface{}, error) {
+	if v == nil {
+		return v, nil
+	}
 	switch name {
 	case "block_size", "nonce", "version", "version_hex", "block_time", "id", "effective_amount", "certificate_amount", "frame_width", "frame_height", "duration", "channel_claim_count", "claim_count":
 		value := v.(float64)
