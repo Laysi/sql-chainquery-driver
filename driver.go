@@ -26,14 +26,16 @@ func (d ChainqueryDriver) Open(dsn string) (driver.Conn, error) {
 	}
 
 	return &chainqueryConn{
-		server: cfg.Addr,
-		client: &http.Client{},
+		server:       cfg.Addr,
+		client:       &http.Client{},
+		lastCallTime: time.Now(),
 	}, nil
 }
 
 type chainqueryConn struct {
-	server string
-	client *http.Client
+	server       string
+	client       *http.Client
+	lastCallTime time.Time
 }
 
 type ChainqueryResult struct {
@@ -42,12 +44,19 @@ type ChainqueryResult struct {
 	Data    []map[string]interface{}
 }
 
-var lastCallTime time.Time = time.Now()
+//var lastCallTime time.Time = time.Now()
+func (c *chainqueryConn) waitFrequencyLimit() {
+	since := time.Since(c.lastCallTime)
+	fmt.Printf("chainquery driver called again after %v\n", since)
+	if since < time.Millisecond*200 {
+		time.Sleep(time.Millisecond*200 - since)
+	}
+	c.lastCallTime = time.Now()
 
-func (c chainqueryConn) Query(sqlQuery string, args []driver.Value) (*ChainqueryResult, error) {
-	now := time.Now()
-	fmt.Printf("chainquery driver called again after %v\n", time.Since(lastCallTime))
-	lastCallTime = now
+}
+func (c *chainqueryConn) Query(sqlQuery string, args []driver.Value) (*ChainqueryResult, error) {
+	c.waitFrequencyLimit()
+
 	iArgs := []interface{}{}
 	for _, arg := range args {
 		iArgs = append(iArgs, arg)
@@ -73,7 +82,7 @@ func (c chainqueryConn) Query(sqlQuery string, args []driver.Value) (*Chainquery
 		return nil, err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return nil, errors.New("request failed with [" + resp.Status + "]")
+		return nil, errors.New("request failed with [" + resp.Status + "] with query [" + sqlQuery + "] url[" + queryUrl.String() + "]")
 	}
 
 	defer resp.Body.Close()
