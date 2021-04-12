@@ -1,4 +1,5 @@
 # sql-chainquery-driver
+A very restricted sql query driver converter for lbry chainquery public http api endpoint
 
 ```go
 package main
@@ -33,7 +34,7 @@ type Block struct {
 
 
 func main() {
-	dbConn, err := sqlx.Connect("chainquery", "https://chainquery.lbry.com")
+	dbConn, err := sqlx.Connect("chainquery", "url(https://chainquery.lbry.com)/")
 	if err != nil {
 		panic(err)
 		return
