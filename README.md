@@ -1,5 +1,5 @@
 # sql-chainquery-driver
-A very restricted sql query driver converter for lbry chainquery public http api endpoint
+A very restricted experimental sql query driver converter for lbry chainquery public http api endpoint
 
 ```go
 package main
